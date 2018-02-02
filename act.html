@@ -1,0 +1,41 @@
+<body style="background-color: white;">
+	<h1>Loaded</h1>
+	<input type="button" value="reload" onclick="location.reload();">
+</body>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+	function escapeLog(text){
+		var startList = ["\u001c","\u0002","�","\u0003"];
+		while(true){
+			var start = startList.map(function(start){
+				return text.indexOf(start);
+			}).sort(function(cmp1,cmp2){
+				if(cmp1==-1)
+					return 1;
+				else if(cmp2==-1)
+					return -1;
+				return cmp1>cmp2;
+			})[0];
+			if(start==-1)
+				break;
+			var target = text.substring(start,text.indexOf("\u0003")+"\u0003".length);
+			text = text.replace(target,"");
+		}
+		text = text.replace(/[\u0001-\u001f]/g,"");
+		text = text.replace(/[\ue000-\uf8ff]/g,"");
+		return text;
+	}
+	
+	var socket = io();
+
+	document.addEventListener("onLogLine",function(data){
+		if(data.detail.opcode==0){
+			socket.emit("log",{
+				timestamp: new Date(data.detail.timestamp).getTime(),
+				type: parseInt(data.detail.payload[0],16),
+				nickname: escapeLog(data.detail.payload[1]),
+				data: escapeLog(data.detail.payload[2])
+			});
+		}
+	});
+</script>

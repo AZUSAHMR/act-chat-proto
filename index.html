@@ -1,0 +1,94 @@
+<!doctype HTML>
+<html>
+	<head>
+		<title>azu's PureWhite Box</title>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, user-scalable=no">
+		<link href="https://azusahmr.github.io/ffxiv-blackbox/pwb/css/bootstrap.min.css" rel="stylesheet">
+		<link href="https://azusahmr.github.io/ffxiv-blackbox/pwb/css/bootstrap-slider.min.css" rel="stylesheet">
+		<link href="https://azusahmr.github.io/ffxiv-blackbox/pwb/css/logColor.css" rel="stylesheet">
+		<style>
+			body{
+				width: 100vw;
+				height: 100vh;
+				max-width: 100vw;
+				max-height: 100vh;
+				background-color: rgba(0,0,0,.6);
+				overflow: hidden;
+			}
+
+			#logPreview{
+				overflow: auto;
+			}
+
+			#textBox{
+				width: 100%;
+			}
+		</style>
+	</head>
+	<body class="container-fluid">
+		<div id="logPreview"></div>
+		<div id="inputBox">
+			<input type="text" id="textBox" value="">
+		</div>
+		<script src="https://azusahmr.github.io/ffxiv-blackbox/pwb/js/util.js"></script>
+		<script src="https://azusahmr.github.io/ffxiv-blackbox/pwb/js/logColor.js"></script>
+		<script src="https://azusahmr.github.io/ffxiv-blackbox/pwb/js/jquery-1.12.4.min.js"></script>
+		<script src="https://azusahmr.github.io/ffxiv-blackbox/pwb/js/bootstrap.min.js"></script>
+		<script src="/socket.io/socket.io.js"></script>
+		<script>
+			var socket = io();
+
+			function printData(data){
+				var timestamp = new Date(data.timestamp);
+				var prefix = '<span class="colorTime">['+(timestamp.getHours()<10?"0"+timestamp.getHours():timestamp.getHours())+":"+(timestamp.getMinutes()<10?"0"+timestamp.getMinutes():timestamp.getMinutes())+']</span>';
+
+				var decType = data.type&255;
+
+				if(getType(decType)!=0)
+					return;
+
+				if(decType==24)
+					prefix+="[자유부대]<"+data.nickname+"> ";
+				else if(decType>=16&&decType<=23)
+					prefix+="["+(decType-15)+"]<"+data.nickname+"> ";
+				else if(decType==10||decType==11||decType==68||decType==30||decType==61)
+					prefix+=data.nickname+": ";
+				else if(decType==14)
+					prefix+="("+data.nickname+") ";
+				else if(decType==28)
+					prefix+=data.nickname;
+				else if(decType==12)
+					prefix+=">>"+data.nickname+": ";
+				else if(decType==13)
+					prefix+=data.nickname+" >> ";
+				else if(decType==15)
+					prefix+="(("+data.nickname+")) ";
+				else if(decType==27)
+					prefix+="[초보자]<"+data.nickname+"> ";
+				
+
+				$("#logPreview").append('<div class="type'+getType(decType)+' '+getColor(decType)+' code'+decType+'">'+prefix+$("<div></div>").text(data.data).html()+'</div>');
+				$("#logPreview").scrollTop($("#logPreview")[0].scrollHeight);
+			}
+
+			function setHeight(){
+				$("#logPreview").height($(window).height()-$("#inputBox").height());
+			}
+
+			$("#textBox").keypress(function(key){
+				if(key.keyCode==13){
+					socket.emit("data",$("#textBox").val());
+					$("#textBox").val("");
+				}
+			});
+
+			$(window).load(function(){
+				socket.on("log",printData);
+
+				setHeight();
+				$(window).resize(setHeight);
+			});
+		</script>
+	</body>
+</html>
